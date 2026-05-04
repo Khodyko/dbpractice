@@ -1,0 +1,14 @@
+services:
+  pg:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${INDEX_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${INDEX_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${INDEX_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
