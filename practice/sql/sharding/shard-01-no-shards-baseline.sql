@@ -1,4 +1,6 @@
 -- Кейс 1 (обязательный): baseline без шардов.
+-- Важно: инициализированный Citus-кластер сам по себе не делает таблицу distributed.
+-- Пока нет create_distributed_table(...), таблица остается локальной на coordinator.
 DROP TABLE IF EXISTS orders_local CASCADE;
 
 CREATE TABLE orders_local (

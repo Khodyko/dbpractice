@@ -1,4 +1,6 @@
 -- Кейс 2 (обязательный): та же нагрузка на distributed table.
+-- Здесь таблица становится distributed только после явного create_distributed_table(...).
+-- Это и есть переход от baseline без шардов (shard-01) к распределенной модели.
 DROP TABLE IF EXISTS orders_dist CASCADE;
 
 CREATE TABLE orders_dist (

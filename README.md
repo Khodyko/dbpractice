@@ -117,6 +117,22 @@
 3. Выполнить инициализацию кластера:
 
    - `practice/sql/sharding/shard-00-init-citus-cluster.sql`
+   - Важно: этот шаг регистрирует worker-узлы у coordinator, но **не** делает все таблицы distributed автоматически.
+     В Citus распределение включается отдельно для каждой таблицы (например, `SELECT create_distributed_table('orders_dist', 'tenant_id');`).
+
+   Быстрая самопроверка после `shard-01`/`shard-02`:
+
+   ```sql
+   SELECT
+       c.relname AS table_name,
+       p.partmethod,
+       pg_get_partkeydef(c.oid) AS distribution_key
+   FROM pg_class c
+   LEFT JOIN pg_dist_partition p ON p.logicalrelid = c.oid
+   WHERE c.relname IN ('orders_local', 'orders_dist');
+   ```
+
+   Ожидаемо: `orders_local` без записи в `pg_dist_partition` (локальная таблица), `orders_dist` — с distribution key.
 
 4. Выполнить обязательные кейсы (по очереди):
 
