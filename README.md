@@ -1,166 +1,110 @@
 # Практический стенд
 
-Все команды `docker compose` ниже выполняются **из корня репозитория** (`dbSystemDesign`), если не указано иное. **SQL-скрипты из `practice/sql/` выполняются вручную** (например, в DBeaver: открыть файл или вставить текст в SQL Editor и выполнить).
+Все команды `docker compose` ниже выполняются **из корня репозитория** (`dbSystemDesign`), если не указано иное.
 
-Порты, имена БД, пользователь и пароль по умолчанию — в [`docker/.env.example`](practice/docker/.env.example). Если используете свой `practice/docker/.env`, возьмите значения оттуда же.
+Практика разделена на две независимые папки:
 
-## Обзор по блокам
+| Папка | Содержимое |
+|-------|------------|
+| [`practice/postgres/`](practice/postgres/) | PostgreSQL / Citus: индексы, партиции, шардирование (SQL + Docker) |
+| [`practice/mongo/`](practice/mongo/) | MongoDB replica set + Spring Boot demo (concern, REST) |
+
+---
+
+## PostgreSQL ([`practice/postgres/`](practice/postgres/))
+
+**SQL-скрипты** выполняются вручную (DBeaver, `psql`). Порты и учётные данные — в [`postgres/docker/.env.example`](practice/postgres/docker/.env.example).
+
+### Обзор блоков
 
 **Индексы**
 
-- **Docker:** [`docker/indexes.compose.yml`](practice/docker/indexes.compose.yml) — один PostgreSQL на все кейсы `idx-01` … `idx-06`
-- **SQL:** [`sql/indexes/`](sql/indexes/) — шесть файлов по очереди в **одной** БД
+- **Docker:** [`postgres/docker/indexes.compose.yml`](practice/postgres/docker/indexes.compose.yml)
+- **SQL:** [`postgres/sql/indexes/`](practice/postgres/sql/indexes/) — `idx-01` … `idx-06`
 
 **Партиционирование**
 
-- **Docker:** [`docker/partitions.compose.yml`](practice/docker/partitions.compose.yml) — один PostgreSQL на все кейсы `part-00` … `part-03`
-- **SQL:** [`sql/partitioning/`](sql/partitioning/) — четыре файла по очереди в **одной** БД (каждый скрипт самодостаточен; рекомендуемый порядок — с `part-00`)
+- **Docker:** [`postgres/docker/partitions.compose.yml`](practice/postgres/docker/partitions.compose.yml)
+- **SQL:** [`postgres/sql/partitioning/`](practice/postgres/sql/partitioning/) — `part-00` … `part-03`
 
-**Шардирование**
+**Шардирование (Citus / PostgreSQL)**
 
-- **Docker:** [`docker/sharding.compose.yml`](practice/docker/sharding.compose.yml) — один Citus-кластер (coordinator + 3 worker) на все кейсы
-- **SQL:** [`sql/sharding/`](sql/sharding/) — кейсы запускаются по очереди на coordinator; между кейсами выполнять reset
+- **Docker:** [`postgres/docker/sharding.compose.yml`](practice/postgres/docker/sharding.compose.yml)
+- **SQL:** [`postgres/sql/sharding/`](practice/postgres/sql/sharding/) — кейсы на coordinator
 
-## Требования
+### Требования
 
-- Docker и Docker Compose v2 (желательно с `docker compose up --wait`; иначе после `up -d` дождитесь готовности БД перед подключением клиентом)
-- Клиент PostgreSQL: **DBeaver**, DataGrip, `psql` и т.п.
+- Docker Compose v2
+- Клиент PostgreSQL: DBeaver, DataGrip, `psql`
 
-Переменные окружения: скопируйте [`docker/.env.example`](practice/docker/.env.example) в `docker/.env` при необходимости, либо передавайте `--env-file practice/docker/.env.example` в команды `docker compose`.
+### Подключение в DBeaver
 
-## Структура каталога `practice/`
+User / password по умолчанию: `demo` / `demo`. SSL для локальных контейнеров — **Disable**.
 
-- `docker/` — Compose-файлы и `.env.example`
-- `sql/indexes/` — сценарии для индексов
-- `sql/partitioning/` — сценарии для партиционирования
-- `sql/sharding/` — сценарии для шардирования
-- `sql/reset/` — общий сброс объектов (по необходимости)
+| Блок | Host | Port | Database | SQL |
+|------|------|------|----------|-----|
+| Индексы `idx-01` … `idx-06` | `localhost` | `5541` | `index_demo` | `postgres/sql/indexes/` |
+| Партиции `part-00` … `part-03` | `localhost` | `5551` | `part_demo` | `postgres/sql/partitioning/` |
+| Шардирование (coordinator) | `localhost` | `5560` | `shard_demo` | `postgres/sql/sharding/` |
+| Шардирование (worker 1–3) | `localhost` | `5561`–`5563` | `shard_demo` | диагностика |
 
----
+### Блок индексов
 
-## Подключение в DBeaver
+```bash
+docker compose -f practice/postgres/docker/indexes.compose.yml \
+  --env-file practice/postgres/docker/.env.example up -d --wait
+# SQL: practice/postgres/sql/indexes/idx-01 … idx-06
+docker compose -f practice/postgres/docker/indexes.compose.yml \
+  --env-file practice/postgres/docker/.env.example down -v
+```
 
-Создайте подключения типа **PostgreSQL**. Хост — машина, где слушает контейнер (на той же машине, что и Docker, обычно `localhost` или `127.0.0.1`). SSL для локальных контейнеров обычно **выключен** (Disable).
+### Партиционирование
 
-Общие поля по умолчанию (из `.env.example`): **User** `demo`, **Password** `demo`.
+```bash
+docker compose -f practice/postgres/docker/partitions.compose.yml \
+  --env-file practice/postgres/docker/.env.example up -d --wait
+# SQL: part-00 → part-03 в practice/postgres/sql/partitioning/
+docker compose -f practice/postgres/docker/partitions.compose.yml \
+  --env-file practice/postgres/docker/.env.example down -v
+```
 
-| Блок / кейс | Host | Port | Database | Файлы SQL (вручную) |
-|---------------|------|------|----------|---------------------|
-| Индексы `idx-01` … `idx-06` | `localhost` | `5541` | `index_demo` | по очереди файлы `idx-01-selective-filter.sql` … `idx-06-stats-analyze.sql` в `sql/indexes/` |
-| Партиции `part-00` … `part-03` | `localhost` | `5551` | `part_demo` | по очереди `part-00-no-partitioning-baseline.sql`, затем `part-01` … `part-03` в `sql/partitioning/` |
-| Шардирование (Citus coordinator) | `localhost` | `5560` | `shard_demo` | сначала `shard-00-init-citus-cluster.sql`, далее кейсы `shard-01` ... `shard-06` (и опционально `shard-07`, `shard-08`) |
-| Шардирование (worker 1, опционально) | `localhost` | `5561` | `shard_demo` | служебное подключение для диагностики |
-| Шардирование (worker 2, опционально) | `localhost` | `5562` | `shard_demo` | служебное подключение для диагностики |
-| Шардирование (worker 3, опционально) | `localhost` | `5563` | `shard_demo` | служебное подключение для диагностики |
+### Шардирование (Citus)
 
-В DBeaver для практики достаточно одного основного подключения к coordinator (`localhost:5560`) и, при необходимости, трёх служебных подключений к worker-нодам.
-
----
-
-## Блок индексов (один compose, кейсы `idx-01` … `idx-06`)
-
-1. Поднять PostgreSQL:
-
-   ```bash
-   docker compose -f practice/docker/indexes.compose.yml --env-file practice/docker/.env.example up -d --wait
-   ```
-
-2. В DBeaver подключиться к **localhost:5541**, БД **index_demo** (см. таблицу выше).
-
-3. Вручную выполнить по очереди скрипты из `practice/sql/indexes/`: `idx-01-selective-filter.sql` … `idx-06-stats-analyze.sql`.
-
-4. Остановить стенд:
-
-   ```bash
-   docker compose -f practice/docker/indexes.compose.yml --env-file practice/docker/.env.example down -v
-   ```
+```bash
+docker compose -f practice/postgres/docker/sharding.compose.yml \
+  --env-file practice/postgres/docker/.env.example up -d --wait
+# SQL: shard-00-init, затем shard-01 … shard-06; между кейсами — postgres/sql/reset/reset-all.sql
+docker compose -f practice/postgres/docker/sharding.compose.yml \
+  --env-file practice/postgres/docker/.env.example down -v
+```
 
 ---
 
-## Партиционирование (один compose, кейсы `part-00` … `part-03`)
+## MongoDB ([`practice/mongo/`](practice/mongo/))
 
-1. Поднять PostgreSQL:
+**Replica set** (репликация, не sharding) + минимальный Spring Boot. Runbook: [`mongo/demo-mongo/README.md`](practice/mongo/demo-mongo/README.md).
 
-   ```bash
-   docker compose -f practice/docker/partitions.compose.yml --env-file practice/docker/.env.example up -d --wait
-   ```
+- **Docker:** [`mongo/docker/mongo-rs.compose.yml`](practice/mongo/docker/mongo-rs.compose.yml) — 3× `mongod`, порты **5571–5573**
+- **Приложение:** [`mongo/demo-mongo/`](practice/mongo/demo-mongo/) — профили `strict` / `loose` (write/read concern)
 
-2. В DBeaver подключиться к **localhost:5551**, БД **part_demo** (см. таблицу выше).
+```bash
+docker compose -f practice/mongo/docker/mongo-rs.compose.yml \
+  --env-file practice/mongo/docker/.env.example up -d --wait
+./practice/mongo/docker/mongo-rs-init.sh
 
-3. Вручную выполнить по очереди скрипты из `practice/sql/partitioning/`:
+cd practice/mongo/demo-mongo
+export MONGO_RS_URI='mongodb://localhost:5571,localhost:5572,localhost:5573/demo?replicaSet=rs0'
+mvn spring-boot:run -Dspring-boot.run.profiles=strict
 
-   - `part-00-no-partitioning-baseline.sql` — одна таблица без партиций, тот же запрос `count(*)` по марту (сравнение времени с `part-01`);
-   - `part-01-pruning-on.sql`
-   - `part-02-pruning-off.sql`
-   - `part-03-no-index-in-partitions.sql`
+docker compose -f practice/mongo/docker/mongo-rs.compose.yml \
+  --env-file practice/mongo/docker/.env.example down -v
+```
 
-   В начале скриптов удаляются чужие объекты (`events_flat` / `events_part`), чтобы не копить два набора по 10 млн строк. Для сюжета доклада удобен порядок `00` → `01` → `02` → `03`.
-
-4. Остановить стенд:
-
-   ```bash
-   docker compose -f practice/docker/partitions.compose.yml --env-file practice/docker/.env.example down -v
-   ```
-
----
-
-## Шардирование (один compose, Citus-кластер)
-
-1. Поднять Citus-кластер:
-
-   ```bash
-   docker compose -f practice/docker/sharding.compose.yml --env-file practice/docker/.env.example up -d --wait
-   ```
-
-2. Подключиться в DBeaver к coordinator: **localhost:5560**, БД **shard_demo**.
-
-3. Выполнить инициализацию кластера:
-
-   - `practice/sql/sharding/shard-00-init-citus-cluster.sql`
-   - Важно: этот шаг регистрирует worker-узлы у coordinator, но **не** делает все таблицы distributed автоматически.
-     В Citus распределение включается отдельно для каждой таблицы (например, `SELECT create_distributed_table('orders_dist', 'tenant_id');`).
-
-   Быстрая самопроверка после `shard-01`/`shard-02`:
-
-   ```sql
-   SELECT
-       c.relname AS table_name,
-       p.partmethod,
-       pg_get_partkeydef(c.oid) AS distribution_key
-   FROM pg_class c
-   LEFT JOIN pg_dist_partition p ON p.logicalrelid = c.oid
-   WHERE c.relname IN ('orders_local', 'orders_dist');
-   ```
-
-   Ожидаемо: `orders_local` без записи в `pg_dist_partition` (локальная таблица), `orders_dist` — с distribution key.
-
-4. Выполнить обязательные кейсы (по очереди):
-
-   - `practice/sql/sharding/shard-01-no-shards-baseline.sql`
-   - `practice/sql/sharding/shard-02-distributed-performance.sql`
-   - `practice/sql/sharding/shard-03-hot-spot-bad-shard-key.sql`
-   - `practice/sql/sharding/shard-04-join-limitation-distributed.sql`
-   - `practice/sql/sharding/shard-05-reference-table-join-fix.sql`
-   - `practice/sql/sharding/shard-06-colocation-vs-non-colocation.sql`
-
-5. Между кейсами запускать reset:
-
-   - `practice/sql/reset/reset-all.sql`
-
-6. Опциональные кейсы (если есть время):
-
-   - `practice/sql/sharding/shard-07-optional-router-vs-distributed.sql`
-   - `practice/sql/sharding/shard-08-optional-shard-skew-rebalance.sql`
-
-7. Остановить стенд:
-
-   ```bash
-   docker compose -f practice/docker/sharding.compose.yml --env-file practice/docker/.env.example down -v
-   ```
+Требования: Docker, **Java 25** или Maven через Docker (см. [`demo-mongo/README.md`](demo-mongo/README.md)).
 
 ---
 
 ## Замечания
 
-- Если `docker compose up --wait` недоступен, используйте `up -d` и подождите, пока PostgreSQL примет подключение, прежде чем открывать сессию в DBeaver.
-- При смене портов или имён БД в `docker/.env` обновите и подключения в DBeaver, и таблицу (или сверяйтесь только с `.env`).
+- Если `docker compose up --wait` недоступен, используйте `up -d` и дождитесь готовности БД.
+- При смене портов в `.env` обновите подключения в DBeaver / URI приложения.

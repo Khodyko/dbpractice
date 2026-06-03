@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: demo-mongo
+  profiles:
+    active: strict
+  data:
+    mongodb:
+      uri: ${MONGO_RS_URI:mongodb://localhost:5571,localhost:5572,localhost:5573/demo?replicaSet=rs0}
+      auto-index-creation: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+demo:
+  replication:
+    label: strict
