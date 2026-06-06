@@ -44,8 +44,10 @@
 
 ```bash
 cd practice/mongo/demo-mongo
+```
+
+```bash
 docker run --rm --network host -v "$PWD":/app -w /app \
-  -e MONGO_RS_URI='mongodb://localhost:5571,localhost:5572,localhost:5573/demo?replicaSet=rs0' \
   maven:3.9-eclipse-temurin-25 mvn spring-boot:run -Dspring-boot.run.profiles=strict
 ```
 
@@ -54,15 +56,20 @@ docker run --rm --network host -v "$PWD":/app -w /app \
 Из **корня репозитория**:
 
 ```bash
-docker compose -f practice/mongo/docker/mongo-rs.compose.yml --env-file practice/mongo/docker/.env.example up -d --wait
+docker compose -f practice/mongo/docker/mongo-rs.compose.yml up -d --wait
+```
+
+`rs.initiate()` + `rs.status()` — см. [MongoDB Manual](https://www.mongodb.com/docs/manual/reference/method/rs.initiate/):
+
+```bash
 ./practice/mongo/docker/mongo-rs-init.sh
 ```
 
-Проверка: `docker compose -f practice/mongo/docker/mongo-rs.compose.yml --env-file practice/mongo/docker/.env.example exec -T mongo1 mongosh --port 5571 --quiet --eval 'rs.status().members.map(m => m.name + " " + m.stateStr)'`
+Повторный запуск скрипта на уже инициализированном rs выдаст ошибку; для чистого старта: `docker compose ... down -v`, затем `up` и init снова.
 
 Ожидаемо: один `PRIMARY`, два `SECONDARY`.
 
-URI (из `.env.example`):
+URI (дефолт в `application.yml`):
 
 ```text
 mongodb://localhost:5571,localhost:5572,localhost:5573/demo?replicaSet=rs0
@@ -70,19 +77,23 @@ mongodb://localhost:5571,localhost:5572,localhost:5573/demo?replicaSet=rs0
 
 ## 2. Запуск приложения
 
+Из корня репозитория:
+
 ```bash
-cd practice/mongo/demo-mongo
-export MONGO_RS_URI='mongodb://localhost:5571,localhost:5572,localhost:5573/demo?replicaSet=rs0'
-mvn spring-boot:run -Dspring-boot.run.profiles=strict
+mvn -f practice/mongo/demo-mongo/pom.xml spring-boot:run -Dspring-boot.run.profiles=strict
 ```
 
 Профиль `loose`:
 
 ```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=loose
+mvn -f practice/mongo/demo-mongo/pom.xml spring-boot:run -Dspring-boot.run.profiles=loose
 ```
 
-Health: `curl -s http://localhost:8080/actuator/health`
+Health:
+
+```bash
+curl -s http://localhost:8080/actuator/health
+```
 
 ## 3. REST-сценарии
 
@@ -92,8 +103,11 @@ Health: `curl -s http://localhost:8080/actuator/health`
 curl -s -X POST http://localhost:8080/orders \
   -H 'Content-Type: application/json' \
   -d '{"tenantId":42,"status":"PAID","email":"a@demo.local","amount":100.50,"lines":[{"sku":"A","qty":2}]}'
+```
 
-# подставить id из ответа
+Подставить `id` из ответа:
+
+```bash
 curl -s -D - http://localhost:8080/orders/<id>
 ```
 
@@ -128,9 +142,10 @@ curl -s 'http://localhost:8080/orders/by-status?status=PAID'
 
 ## 5. Остановка
 
+Из корня репозитория:
+
 ```bash
-# из корня репозитория
-docker compose -f practice/mongo/docker/mongo-rs.compose.yml --env-file practice/mongo/docker/.env.example down -v
+docker compose -f practice/mongo/docker/mongo-rs.compose.yml down -v
 ```
 
 ## Структура кода

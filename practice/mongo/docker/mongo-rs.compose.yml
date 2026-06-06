@@ -1,14 +1,20 @@
 services:
+  # Первый узел replica set rs0 (member _id: 0 в mongo-rs-init.sh).
   mongo1:
+    # Официальный образ MongoDB 7.x.
     image: mongo:7
+    # mongod в режиме replica set; порт 5571 вместо 27017 — без конфликта с локальным MongoDB.
+    # --bind_ip_all: слушать на всех интерфейсах (нужно для связи узлов и Spring на хосте).
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "5571"]
+    # Сеть хоста: порты 5571–5573 доступны как localhost; не нужен проброс ports:.
     network_mode: host
+    # Проверка «процесс жив» для compose up --wait. Не проверяет PRIMARY / rs.initiate().
     healthcheck:
       test: ["CMD", "mongosh", "--port", "5571", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
+      interval: 5s    # интервал между проверками
+      timeout: 5s     # таймаут одной проверки
+      retries: 20     # попыток до статуса unhealthy
+      start_period: 10s  # grace period после старта контейнера
 
   mongo2:
     image: mongo:7
