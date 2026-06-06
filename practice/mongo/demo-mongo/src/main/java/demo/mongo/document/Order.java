@@ -39,16 +39,4 @@ public class Order {
     private BigDecimal amount;
 
     private List<LineItem> lines = new ArrayList<>();
-
-    /**
-     * Вложенная строка заказа (embedding, без отдельной коллекции).
-     */
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    public static class LineItem {
-
-        private String sku;
-        private int qty;
-    }
 }

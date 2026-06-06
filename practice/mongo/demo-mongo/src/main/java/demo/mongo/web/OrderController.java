@@ -1,6 +1,7 @@
 package demo.mongo.web;
 
 import demo.mongo.config.DemoReplicationProperties;
+import demo.mongo.document.LineItem;
 import demo.mongo.document.Order;
 import demo.mongo.repository.OrderRepository;
 import demo.mongo.web.dto.OrderRequest;
@@ -103,15 +104,15 @@ public class OrderController {
 
     private Order toOrder(OrderRequest request) {
         Order order = new Order();
-        order.setTenantId(request.getTenantId());
-        order.setStatus(request.getStatus());
-        order.setEmail(request.getEmail());
-        order.setAmount(request.getAmount());
-        if (request.getLines() != null) {
-            order.setLines(request.getLines().stream().map(line -> {
-                Order.LineItem item = new Order.LineItem();
-                item.setSku(line.getSku());
-                item.setQty(line.getQty());
+        order.setTenantId(request.tenantId());
+        order.setStatus(request.status());
+        order.setEmail(request.email());
+        order.setAmount(request.amount());
+        if (request.lines() != null) {
+            order.setLines(request.lines().stream().map(line -> {
+                LineItem item = new LineItem();
+                item.setSku(line.sku());
+                item.setQty(line.qty());
                 return item;
             }).collect(Collectors.toList()));
         }

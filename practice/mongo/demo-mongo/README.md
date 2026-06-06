@@ -135,7 +135,7 @@ docker compose -f practice/mongo/docker/mongo-rs.compose.yml --env-file practice
 
 ## Структура кода
 
-- `document/Order.java` — `@Document`, `@Field`, embedding `LineItem`
+- `document/Order.java`, `document/LineItem.java` — `@Document`, `@Field`, embedding
 - `repository/OrderRepository.java` — derived + `@Query`
 - `config/MongoConcernConfig.java` — concern по профилю
 - `web/OrderController.java` — POST/GET без бизнес-слоя
