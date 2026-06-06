@@ -94,22 +94,22 @@ docker compose -f practice/postgres/docker/sharding.compose.yml \
 
 ## MongoDB ([`practice/mongo/`](practice/mongo/))
 
-**Replica set** (репликация, не sharding) + минимальный Spring Boot. Подробный runbook: [`practice/mongo/demo-mongo/README.md`](practice/mongo/demo-mongo/README.md).
+**Replica set** (репликация, не sharding) + минимальный Spring Boot. Подробный runbook: [`mongoDemo.md`](mongoDemo.md).
 
 - **Docker:** [`mongo/docker/mongo-rs.compose.yml`](practice/mongo/docker/mongo-rs.compose.yml) — 3× `mongod` с `--replSet rs0`, порты **5571–5573**
-- **Init:** [`mongo/docker/mongo-rs-init.sh`](practice/mongo/docker/mongo-rs-init.sh) — обёртка над [`rs.initiate()`](https://www.mongodb.com/docs/manual/reference/method/rs.initiate/) (compose только стартует узлы)
-- **Приложение:** [`mongo/demo-mongo/`](practice/mongo/demo-mongo/) — профили `strict` / `loose` (write/read concern)
+- **Скрипты:** [`mongo-rs-up.sh`](practice/mongo/docker/mongo-rs-up.sh), [`mongo-rs-init.sh`](practice/mongo/docker/mongo-rs-init.sh), [`mongo-rs-down.sh`](practice/mongo/docker/mongo-rs-down.sh)
+- **Приложение:** [`mongo/demo-mongo/`](practice/mongo/demo-mongo/) — профили `strict` / `loose`
 
 **1.** Три `mongod` (healthcheck ping; replica set ещё не собран):
 
 ```bash
-docker compose -f practice/mongo/docker/mongo-rs.compose.yml up -d --wait
+practice/mongo/docker/mongo-rs-up.sh
 ```
 
 **2.** `rs.initiate(rs0)` + `rs.status()` — ожидаемо один PRIMARY, два SECONDARY:
 
 ```bash
-./practice/mongo/docker/mongo-rs-init.sh
+practice/mongo/docker/mongo-rs-init.sh
 ```
 
 **3.** Spring Boot, профиль `strict` (URI — дефолт в `application.yml`):
@@ -121,12 +121,12 @@ mvn -f practice/mongo/demo-mongo/pom.xml spring-boot:run -Dspring-boot.run.profi
 **Остановка:**
 
 ```bash
-docker compose -f practice/mongo/docker/mongo-rs.compose.yml down -v
+practice/mongo/docker/mongo-rs-down.sh
 ```
 
 Повторный запуск init на уже инициализированном rs выдаст ошибку — для чистого старта сначала `down -v`.
 
-Требования: Docker, **Java 25** или Maven через Docker (см. [`practice/mongo/demo-mongo/README.md`](practice/mongo/demo-mongo/README.md)).
+Требования: Docker, **Java 25** и **Maven 3.9+** (см. [`mongoDemo.md`](mongoDemo.md)).
 
 ---
 
