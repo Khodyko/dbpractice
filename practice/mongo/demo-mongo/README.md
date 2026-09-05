@@ -1,17 +1,23 @@
 # demo-mongo
 
-Spring Boot demo для блока MongoDB доклада.
+Spring Boot demo для блока MongoDB доклада (профиль **strict**).
 
-Требуется **Java 25** и **Maven 3.9+** на хосте.
+## Запуск и домашняя работа
 
-Полный runbook: [`mongoDemo.md`](../../../mongoDemo.md) в корне репозитория.
+Не запускайте только этот модуль «в вакууме».
 
-Команды — из корня `dbSystemDesign`:
+**Домашняя работа:** [`../HOMEWORK.md`](../HOMEWORK.md) · [`../ANSWERS.md`](../ANSWERS.md)
+
+Кратко — **из корня** `dbSystemDesign`:
 
 ```bash
 practice/mongo/docker/mongo-rs-up.sh
 practice/mongo/docker/mongo-rs-init.sh
-mvn -f practice/mongo/demo-mongo/pom.xml spring-boot:run -Dspring-boot.run.profiles=strict
+mvn -f practice/mongo/demo-mongo/pom.xml spring-boot:run \
+  -Dspring-boot.run.profiles=strict
+curl -s http://localhost:8080/actuator/health
 ```
 
-REST-сценарии: `http/demo-orders.http`
+Требуется **Java 25** и **Maven 3.9+**.
+
+Сценарий показа на докладе: [`mongoDemo.md`](../../../mongoDemo.md).

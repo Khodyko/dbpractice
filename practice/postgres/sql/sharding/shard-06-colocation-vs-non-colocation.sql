@@ -69,7 +69,9 @@ JOIN payments_colocated_demo p
  AND p.order_id = o.id
 WHERE o.tenant_id = 42;
 
--- Плохой JOIN: non-colocated таблицы.
+-- Плохой JOIN: non-colocated таблицы (без repartition → ошибка).
+SET citus.enable_repartition_joins TO off;
+
 EXPLAIN (ANALYZE, VERBOSE)
 SELECT count(*)
 FROM orders_colocated_demo o

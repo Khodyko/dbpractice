@@ -13,6 +13,8 @@ FROM generate_series(1, 500000);
 
 CREATE INDEX idx_orders_status ON orders (status);
 
+ANALYZE orders;
+
 EXPLAIN ANALYZE
 SELECT * FROM orders WHERE status = 'ACTIVE';
 

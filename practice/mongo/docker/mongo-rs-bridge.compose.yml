@@ -1,0 +1,47 @@
+services:
+  # Bridge-вариант RS для macOS/Windows Docker Desktop (без network_mode: host).
+  # Для доклада и demo-mongo с хоста используйте mongo-rs.compose.yml (Linux/WSL2).
+  mongo1:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "5571"]
+    ports:
+      - "5571:5571"
+    networks:
+      - mongo-rs-bridge
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "5571", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  mongo2:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "5572"]
+    ports:
+      - "5572:5572"
+    networks:
+      - mongo-rs-bridge
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "5572", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  mongo3:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "5573"]
+    ports:
+      - "5573:5573"
+    networks:
+      - mongo-rs-bridge
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "5573", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+networks:
+  mongo-rs-bridge:

@@ -2,6 +2,13 @@
 
 Все команды `docker compose` ниже выполняются **из корня репозитория** (`dbSystemDesign`), если не указано иное.
 
+**Домашняя работа:**
+
+| Блок | Задание | Как выполнить |
+|------|---------|---------------|
+| PostgreSQL | [`practice/postgres/HOMEWORK.md`](practice/postgres/HOMEWORK.md) | [`practice/postgres/ANSWERS.md`](practice/postgres/ANSWERS.md) |
+| MongoDB | [`practice/mongo/HOMEWORK.md`](practice/mongo/HOMEWORK.md) | [`practice/mongo/ANSWERS.md`](practice/mongo/ANSWERS.md) |
+
 Практика разделена на две независимые папки:
 
 | Папка | Содержимое |
@@ -13,7 +20,9 @@
 
 ## PostgreSQL ([`practice/postgres/`](practice/postgres/))
 
-**SQL-скрипты** выполняются вручную (DBeaver, `psql`). Порты и учётные данные — в [`postgres/docker/.env.example`](practice/postgres/docker/.env.example).
+**Домашняя работа:** [`practice/postgres/HOMEWORK.md`](practice/postgres/HOMEWORK.md) · [`ANSWERS.md`](practice/postgres/ANSWERS.md)
+
+**SQL-скрипты** выполняются вручную (IntelliJ Database, DBeaver, `psql`). Порты и учётные данные — в [`postgres/docker/.env.example`](practice/postgres/docker/.env.example).
 
 ### Обзор блоков
 
@@ -94,39 +103,33 @@ docker compose -f practice/postgres/docker/sharding.compose.yml \
 
 ## MongoDB ([`practice/mongo/`](practice/mongo/))
 
-**Replica set** (репликация, не sharding) + минимальный Spring Boot. Подробный runbook: [`mongoDemo.md`](mongoDemo.md).
+**Домашняя работа:** [`practice/mongo/HOMEWORK.md`](practice/mongo/HOMEWORK.md) · [`ANSWERS.md`](practice/mongo/ANSWERS.md)
 
-- **Docker:** [`mongo/docker/mongo-rs.compose.yml`](practice/mongo/docker/mongo-rs.compose.yml) — 3× `mongod` с `--replSet rs0`, порты **5571–5573**
-- **Скрипты:** [`mongo-rs-up.sh`](practice/mongo/docker/mongo-rs-up.sh), [`mongo-rs-init.sh`](practice/mongo/docker/mongo-rs-init.sh), [`mongo-rs-down.sh`](practice/mongo/docker/mongo-rs-down.sh)
-- **Приложение:** [`mongo/demo-mongo/`](practice/mongo/demo-mongo/) — профили `strict` / `loose`
+**Сценарий доклада:** [`mongoDemo.md`](mongoDemo.md)
 
-**1.** Три `mongod` (healthcheck ping; replica set ещё не собран):
+Краткий запуск RS (Linux, host-сеть):
 
 ```bash
 practice/mongo/docker/mongo-rs-up.sh
-```
-
-**2.** `rs.initiate(rs0)` + `rs.status()` — ожидаемо один PRIMARY, два SECONDARY:
-
-```bash
 practice/mongo/docker/mongo-rs-init.sh
+docker compose -f practice/mongo/docker/mongo-rs.compose.yml exec -it mongo1 mongosh --port 5571 demo
 ```
 
-**3.** Spring Boot, профиль `strict` (URI — дефолт в `application.yml`):
-
-```bash
-mvn -f practice/mongo/demo-mongo/pom.xml spring-boot:run -Dspring-boot.run.profiles=strict
-```
-
-**Остановка:**
+Остановка:
 
 ```bash
 practice/mongo/docker/mongo-rs-down.sh
 ```
 
-Повторный запуск init на уже инициализированном rs выдаст ошибку — для чистого старта сначала `down -v`.
+*(Опционально, для доклада)* наполнение `demo.orders`:
 
-Требования: Docker, **Java 25** и **Maven 3.9+** (см. [`mongoDemo.md`](mongoDemo.md)).
+```bash
+practice/mongo/docker/mongo-rs-seed.sh
+```
+
+Spring demo (`demo-mongo`) и replica set - для доклада. Домашка самодостаточна: любая MongoDB, см. [`HOMEWORK.md`](practice/mongo/HOMEWORK.md).
+
+**macOS / Windows (стенд доклада):** `practice/mongo/docker/mongo-rs-up-bridge.sh` и `mongo-rs-init-bridge.sh`, либо WSL2.
 
 ---
 
