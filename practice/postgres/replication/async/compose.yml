@@ -1,0 +1,50 @@
+name: pg-repl-async
+
+services:
+  pg-primary:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${REPL_DB:-repl_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-demo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo}
+    ports:
+      - "${REPL_PRIMARY_PORT:-5580}:5432"
+    volumes:
+      - async_primary_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${POSTGRES_USER:-demo} -d ${REPL_DB:-repl_demo} -c 'SELECT 1' >/dev/null"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  pg-standby:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-demo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo}
+    ports:
+      - "${REPL_STANDBY_PORT:-5581}:5432"
+    volumes:
+      - async_standby_data:/var/lib/postgresql/data
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+          echo "pg-standby: PGDATA пуст. REPLICA.md — pg_basebackup, затем restart pg-standby."
+          exec sleep infinity
+        fi
+        exec docker-entrypoint.sh postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-demo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 120s
+
+volumes:
+  async_primary_data:
+  async_standby_data:

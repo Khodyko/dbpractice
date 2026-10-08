@@ -13,7 +13,7 @@
 
 | Папка | Содержимое |
 |-------|------------|
-| [`practice/postgres/`](practice/postgres/) | PostgreSQL / Citus: индексы, партиции, шардирование (SQL + Docker) |
+| [`practice/postgres/`](practice/postgres/) | PostgreSQL / Citus: индексы, партиции, шардирование (SQL + Docker); репликация — материал доклада |
 | [`practice/mongo/`](practice/mongo/) | MongoDB replica set + Spring Boot demo (concern, REST) |
 
 ---
@@ -41,6 +41,11 @@
 - **Docker:** [`postgres/docker/sharding.compose.yml`](practice/postgres/docker/sharding.compose.yml)
 - **SQL:** [`postgres/sql/sharding/`](practice/postgres/sql/sharding/) — кейсы на coordinator
 
+**Репликация** — доклад и [HOMEWORK §4](practice/postgres/HOMEWORK.md#4-репликация), runbook [`REPLICA.md`](REPLICA.md)
+
+- **Runbook:** [`REPLICA.md`](REPLICA.md) (корень репозитория, команды из корня проекта)
+- **Стенды:** [`async/`](practice/postgres/replication/async/), [`sync/`](practice/postgres/replication/sync/), [`logical/`](practice/postgres/replication/logical/) — `compose.yml`, образцы `conf/` и `sql/`
+
 ### Требования
 
 - Docker Compose v2
@@ -56,6 +61,9 @@ User / password по умолчанию: `demo` / `demo`. SSL для локал�
 | Партиции `part-00` … `part-03` | `localhost` | `5551` | `part_demo` | `postgres/sql/partitioning/` |
 | Шардирование (coordinator) | `localhost` | `5560` | `shard_demo` | `postgres/sql/sharding/` |
 | Шардирование (worker 1–3) | `localhost` | `5561`–`5563` | `shard_demo` | диагностика |
+| Репликация primary (async/sync/logical) | `localhost` | `5580` | `repl_demo` | [`REPLICA.md`](REPLICA.md) |
+| Репликация standby (async/sync) | `localhost` | `5581` | `repl_demo` | streaming |
+| Репликация subscriber (logical) | `localhost` | `5582` | `repl_demo` | pub/sub |
 
 ### Блок индексов
 
@@ -98,6 +106,12 @@ docker compose -f practice/postgres/docker/sharding.compose.yml \
 docker compose -f practice/postgres/docker/sharding.compose.yml \
   --env-file practice/postgres/docker/.env.example down -v
 ```
+
+### Репликация (доклад)
+
+**async → sync → logical** по [`REPLICA.md`](REPLICA.md): Docker (5580 / 5581 / 5582). `.env` не нужен.
+
+Async и sync на 5580/5581 — не одновременно.
 
 ---
 

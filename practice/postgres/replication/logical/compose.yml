@@ -1,0 +1,61 @@
+name: pg-repl-logical
+
+services:
+  pg-primary:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${REPL_DB:-repl_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-demo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo}
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_logical_replication_workers=4
+      - -c
+      - max_sync_workers_per_subscription=2
+    ports:
+      - "${REPL_PRIMARY_PORT:-5580}:5432"
+    volumes:
+      - logical_primary_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${POSTGRES_USER:-demo} -d ${REPL_DB:-repl_demo} -c 'SELECT 1' >/dev/null"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  pg-subscriber:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${REPL_DB:-repl_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-demo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo}
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+    ports:
+      - "${REPL_SUBSCRIBER_PORT:-5582}:5432"
+    volumes:
+      - logical_subscriber_data:/var/lib/postgresql/data
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${POSTGRES_USER:-demo} -d ${REPL_DB:-repl_demo} -c 'SELECT 1' >/dev/null"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+volumes:
+  logical_primary_data:
+  logical_subscriber_data:
